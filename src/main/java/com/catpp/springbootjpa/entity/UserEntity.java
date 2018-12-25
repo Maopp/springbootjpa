@@ -1,5 +1,6 @@
 package com.catpp.springbootjpa.entity;
 
+import com.catpp.springbootjpa.base.BaseEntity;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -15,7 +16,7 @@ import java.io.Serializable;
 @Data
 @Entity
 @Table(name = "user")
-public class UserEntity implements Serializable {
+public class UserEntity extends BaseEntity implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
