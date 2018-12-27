@@ -27,4 +27,11 @@ public interface UserJPA extends BaseRepository<UserEntity, Long>, Serializable 
     @Query(value = "delete from user where nickname = ?1", nativeQuery = true)
     @Transactional
     void deleteByQuery(String nickname);
+
+    /**
+     * 这个方法其实是SpringDataJPA的一个规则，这样写JPA就会认为我们要根据username这个字段去查询，并自动使用参数索引为0的值
+     * @param username
+     * @return
+     */
+    UserEntity findByUsername(String username);
 }

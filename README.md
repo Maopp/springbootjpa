@@ -106,3 +106,93 @@ SpringDataJPA是Spring Data的一个子项目，通过提供基于JPA的Reposito
     为一个Repository创建代理实现类。
 
 ## 分页查询、排序：
+
+
+------------------------------------------------------------------------------------------------------------------------
+# 使用SpringSecurity让SpringBoot项目更安全：
+- SpringSecurity是专门针对基于Spring项目的安全框架，充分利用了依赖注入和AOP来实现安全管控。在很多大型企业级系统中权限是
+最核心的部分，一个系统的好与坏全都在于权限管控是否灵活，是否颗粒化。在早期的SpringSecurity版本中我们需要大量的xml来进行
+配置，而基于SpringBoot整合SpringSecurity框架相对而言简直是重生了，简单到不可思议的地步。
+
+- SpringSecurity框架有两个概念**认证**和**授权**，认证可以访问系统的用户，而授权则是用户可以访问的资源
+
+## 学习目标：在SpringBoot项目中使用SpringSecurity安全框架实现用户认证以及授权访问。
+
+## 实现UserDetails接口：
+```
+    public class UserEntity extends BaseEntity implements Serializable, UserDetails
+    ...
+```
+- UserDetails是SpringSecurity验证框架内部提供的用户验证接口，需要用到UserEntity来完成自定义用户认证功能，需要实现
+getAuthorities方法内容，将定义的角色列表添加到授权的列表内。
+
+## 自定义SpringSecurity用户认证
+- 实现SpringSecurity内的UserDetailsService接口来完成自定义查询用户的逻辑
+```
+    public class UserService implements UserDetailsService {
+
+        @Autowired
+        private UserJPA userJPA;
+        @Override
+        public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+            UserEntity user = userJPA.findByUsername(username);
+            if (null == user) {
+                throw new UsernameNotFoundException("未查询到用户：" + username + "信息");
+            }
+            return user;
+        }
+    }
+```
+
+## 配置SpringSecurity
+```
+    @Configuration
+    public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+        /**
+         * 自定义认证实体注入
+         */
+        @Bean
+        UserDetailsService userService() {
+            return new UserService();
+        }
+        @Override
+        public void configure(HttpSecurity httpSecurity) throws Exception {
+            httpSecurity.csrf().disable()
+                    .authorizeRequests()
+                    .anyRequest().authenticated()// 所有请求必须登陆后才能访问
+                    .and()
+                        .formLogin()
+                        .loginPage("/login")
+                        .failureUrl("login?error")
+                        .permitAll()// 登陆页面、错误页面可以直接访问
+                    .and()
+                    .logout()
+                    .permitAll();// 注销请求可以直接访问
+        }
+    }
+```
+- springSecurity4.0后，默认开启了CSRD拦截，如果需要配置请在form表单添加：
+```
+    <input type="hidden" name="${csrf.parameterName}" value="${_csrf.token}" />
+```
+
+## bug
+- @ManyToMany(fetch = FetchType.EAGER)，@ManyToMany注解不能使用默认的加载方式（Lazy）
+- Spring security 5.0中新增了多种加密方式，也改变了密码的格式。需要设置密码加密方式：
+    ```
+        @Override
+        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+            auth.userDetailsService(userService()).passwordEncoder(new BCryptPasswordEncoder());
+        }
+    ```
+    在用户注册时就使用BCrypt编码将用户密码加密处理后存储在数据库中
+
+## 角色判断：
+- SpringSecurity不支持中文比对，所以不能直接使用角色中文名称作为判断条件
+- 前端不能使用hasRole("roleCode")，要使用hasAuthority("roleCode")
+- SpringSecurity将用户数据、角色数据都缓存到框架内，所以要重启项目页面数据才会更新，重新登陆
+
+## 总结：
+主要学习了SpringBoot项目中如何使用SpringSecurity来作为安全框架，并通过SpringSecurity提供的JSTL标签库来判断界面的输出，
+还有如果修改了用户的权限不会实时生效，需要退出用户后再次登录方可生效。

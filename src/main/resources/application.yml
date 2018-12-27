@@ -37,5 +37,10 @@ spring:
       hibernate:
         show_sql: true
         format_sql: true
+  # 支持jsp
+  mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
 server:
   port: 8081
